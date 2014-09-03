@@ -1,0 +1,7 @@
+{
+	"name": "grunt-var-exporter",
+	"version": "0.1.0",
+	"devDependencies": {
+		"DefinitelyTyped": "https://github.com/borisyankov/DefinitelyTyped.git#913218129823ae1659d5d539f5df61d9d277add0"
+	}
+}
