@@ -1,20 +1,22 @@
-/*
- * grunt-var-exporter
- * https://github.com/anchann/grunt-var-exporter
- *
- * Copyright (c) 2014 anchann
- * Licensed under the MIT license.
- */
+///<reference path='../bower_components/DefinitelyTyped/gruntjs/gruntjs.d.ts'/>
+///<reference path='../bower_components/DefinitelyTyped/lodash/lodash.d.ts'/>
+
 import gruntjs = grunt;
 
+/*
+ * grunt-var-exporter
+ * https://github.com/sigfigdev/grunt-var-exporter
+ *
+ * Copyright (c) 2014 anchann
+ * Copyright (c) 2016 Nvest Inc
+ * Licensed under the MIT license.
+ */
 module anchann.grunt.varExporter {
-	import AsyncResultCatcher = gruntjs.task.AsyncResultCatcher;
-	import ITask              = gruntjs.task.ITask;
+
+	type Task = gruntjs.task.IMultiTask<{}>;
 
 	interface Options {
-		files:  string[];
 		export: string[];
-		dest:   string;
 		pretty: boolean;
 	}
 
@@ -23,60 +25,69 @@ module anchann.grunt.varExporter {
 	}
 
 	export class VarExporter {
-		constructor(private grunt: IGrunt) {
-		}
+		constructor(private grunt: IGrunt) { }
 
 		public registerTask(): void {
-			var theThis = this;
+			var varExporter = this;
 
-			this.grunt.registerTask(
+			this.grunt.registerMultiTask(
 				"varExporter",
 				"Run a bunch of files in a node sandbox, and export a subset of the local vars into a .js file.",
 				// we explicitly don't want this binding, so using non-ts function literal syntax
 				function() {
-					var task: ITask = this;
-					theThis.run.call(theThis, task);
+					var task: Task = this;
+					varExporter.run.call(varExporter, task);
 				}
 			);
 		}
 
-		public run(task: ITask): void {
+		public run(task: Task): void {
 			var DEFAULT_OPTIONS: Options = <any>{
 				pretty: false,
 			};
 
-			var options: Options = task.options<Options>(DEFAULT_OPTIONS);
-			var done: AsyncResultCatcher = task.async();
+			var options = task.options<Options>(DEFAULT_OPTIONS);
+			var done: gruntjs.task.AsyncResultCatcher = task.async();
 
-			var optionsVerficationError = VarExporter.areOptionsValid(options);
-			if (optionsVerficationError !== undefined) {
-				this.grunt.log.error("Error in task configuration: " + optionsVerficationError);
-				done(false);
-				return;
+			var taskConfigErrors = VarExporter.taskConfigErrors(task, options);
+			if (taskConfigErrors) {
+				this.grunt.log.error("Error in task configuration: " + taskConfigErrors);
+				return done(false);
 			}
 
-			try {
-				var filesContent: string  = this.readFiles(options.files);
-				var exportLine:   string  = this.generateExportLine(options.export);
-				var tempFilename: string  = this.writeTempFile(filesContent + "\n" + exportLine);
-				var exports:      Exports = require(require("path").resolve("./" + tempFilename));
-				var destContent:  string  = this.generateDestContent(options.export, exports, options.pretty);
-				this.writeDestFile(options.dest, destContent);
-				this.deleteTempFile(tempFilename);
+			task.files.forEach((files): void => {
+				try {
 
-				done(true);
-			}
-			catch (reason) {
-				this.grunt.log.error(reason);
-				done(false);
-			}
+					var filesContent: string = this.readFiles(files.src);
+					var exportLine: string   = this.generateExportLine(options.export);
+					var tempFilename: string = this.writeTempFile(filesContent + "\n" + exportLine);
+					var exports: Exports     = require(require("path").resolve("./" + tempFilename));
+					var destContent: string  = this.generateDestContent(options.export, exports, options.pretty);
+					this.grunt.log.ok(`Writing ${destContent.length} bytes to ${files.dest}`);
+					this.writeDestFile(files.dest, destContent);
+					this.deleteTempFile(tempFilename);
+
+				} catch (reason) {
+					this.grunt.log.error(`Error processing config from ${files.src}:\n ${reason}`);
+					done(false);
+				}
+
+			});
+			done(true);
 		}
 
-		private static areOptionsValid(options: Options): string /* or undefined */ {
-			if (!options.files || !options.files.length)           return "options.files seems misconfigured, should be a non-empty array of strings.";
-			if (!options.dest || typeof options.dest !== "string") return "options.dest seems misconfigured, should be a non-empty string.";
-			if (!options.export || !options.export.length)         return "options.export seems misconfigured, should be a non-empty array of strings.";
-			return undefined;
+		private static taskConfigErrors(task: Task, options: Options): string /* or undefined */ {
+			var errors = [];
+			if (!task.files || !task.files.length) { errors.push('it should have some files.'); }
+			if (!options.export || !options.export.length) { errors.push('it should have some exports'); }
+			task.files.forEach((files): void => {
+				if (!files.src || !files.src.length) { errors.push('it should specify at least one file in "src"'); }
+				if (!files.dest || typeof files.dest !== "string") { errors.push('it should specify a file in "dest"'); }
+			});
+			if (errors.length) {
+				var indent = '\n    ';
+				return `${task.nameArgs} seems misconfigured:` + indent + errors.join(indent);
+			}
 		}
 
 		private readFiles(filenames: string[]): string {
@@ -124,9 +135,7 @@ module anchann.grunt.varExporter {
 			var regexCount = 0;
 
 			var replacer = (key: any, value: any): any => {
-				if (value &&
-					value.constructor &&
-					value.constructor.toString().substring(0, 15) === "function RegExp") {
+				if (value && value.constructor && value.constructor.toString().substring(0, 15) === "function RegExp") {
 					regexCount++;
 					var regexKey = "____REGEX-PLACEHOLDER-" + regexCount;
 					regexes[regexKey] = value;
