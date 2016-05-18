@@ -2,17 +2,7 @@ var _ = require("lodash");
 
 var grunt = "we don't use this variable, but only need it for typechecking when we import gruntjs = grunt";
 
-///<reference path='../bower_components/DefinitelyTyped/gruntjs/gruntjs.d.ts'/>
-///<reference path='../bower_components/DefinitelyTyped/lodash/lodash.d.ts'/>
 var gruntjs = grunt;
-/*
- * grunt-var-exporter
- * https://github.com/sigfigdev/grunt-var-exporter
- *
- * Copyright (c) 2014 anchann
- * Copyright (c) 2016 Nvest Inc
- * Licensed under the MIT license.
- */
 var anchann;
 (function (anchann) {
     var grunt;
@@ -25,9 +15,7 @@ var anchann;
                 }
                 VarExporter.prototype.registerTask = function () {
                     var varExporter = this;
-                    this.grunt.registerMultiTask("varExporter", "Run a bunch of files in a node sandbox, and export a subset of the local vars into a .js file.", 
-                    // we explicitly don't want this binding, so using non-ts function literal syntax
-                    function () {
+                    this.grunt.registerMultiTask("varExporter", "Run a bunch of files in a node sandbox, and export a subset of the local vars into a .js file.", function () {
                         var task = this;
                         varExporter.run.call(varExporter, task);
                     });
@@ -35,7 +23,7 @@ var anchann;
                 VarExporter.prototype.run = function (task) {
                     var _this = this;
                     var DEFAULT_OPTIONS = {
-                        pretty: false
+                        pretty: false,
                     };
                     var options = task.options(DEFAULT_OPTIONS);
                     var done = task.async();
@@ -111,9 +99,6 @@ var anchann;
                 VarExporter.prototype.deleteTempFile = function (filename) {
                     this.grunt.file.delete(filename);
                 };
-                /**
-                 * JSON encoding doesn't allow regexes, but they would be nice to have
-                 */
                 VarExporter.encode = function (value, pretty) {
                     var regexes = {};
                     var regexCount = 0;
@@ -132,12 +117,12 @@ var anchann;
                     }, intermediate);
                 };
                 return VarExporter;
-            })();
+            }());
             varExporter_1.VarExporter = VarExporter;
         })(varExporter = grunt_1.varExporter || (grunt_1.varExporter = {}));
     })(grunt = anchann.grunt || (anchann.grunt = {}));
 })(anchann || (anchann = {}));
-
+//# sourceMappingURL=tslib.js.map
 module.exports = function(grunt) {
 	var varExporter = new anchann.grunt.varExporter.VarExporter(grunt);
 	varExporter.registerTask();
