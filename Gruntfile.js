@@ -13,7 +13,7 @@ module.exports = function(grunt) {
 	// Project configuration.
 	grunt.initConfig({
 
-		typescript: {
+		ts: {
 			base: {
 				src: [ 'src/**/*.ts' ],
 				dest: 'tmp/tslib.js',
@@ -49,11 +49,10 @@ module.exports = function(grunt) {
 	// These plugins provide necessary tasks.
 	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-clean');
-	grunt.loadNpmTasks('grunt-contrib-nodeunit');
 	grunt.loadNpmTasks('grunt-contrib-concat');
-	grunt.loadNpmTasks('grunt-typescript');
+	grunt.loadNpmTasks('grunt-ts');
 
-	grunt.registerTask('build', ['typescript', 'concat']);
+	grunt.registerTask('build', ['ts', 'concat']);
 
 	// By default, lint and run all tests.
 	grunt.registerTask('default', ['build', 'jshint']);
